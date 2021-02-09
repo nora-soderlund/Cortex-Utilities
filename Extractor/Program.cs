@@ -2,6 +2,7 @@
 using System.IO;
 using System.Linq;
 using System.Xml;
+using System.Threading;
 using System.Diagnostics;
 using System.Collections.Generic;
 
@@ -18,12 +19,14 @@ namespace Extractor {
             FileAttributes attr = File.GetAttributes(path);
 
             Directory.CreateDirectory("output");
+            
+            ThreadPool.SetMaxThreads(4, 4);
 
             if((attr & FileAttributes.Directory) == FileAttributes.Directory) {
                 string[] files = Directory.GetFiles(path);
 
                 for(int index = 0; index < files.Length; index++)
-                    Extract(files[index]);
+                    ThreadPool.QueueUserWorkItem(result => Extract(files[index]));
             }
             else
                 Extract(path);
@@ -45,7 +48,9 @@ namespace Extractor {
                 if(Directory.Exists(output)) {
                     Console.WriteLine("Output directory already exists!");
 
-                    Directory.Delete(output, true);
+                    //Directory.Delete(output, true);
+
+                    return;
                 }
 
                 Directory.CreateDirectory(output);
