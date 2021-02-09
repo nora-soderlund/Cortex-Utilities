@@ -2,9 +2,12 @@
 using System.IO;
 using System.Linq;
 using System.Xml;
+using System.Xml.Linq;
 using System.Threading;
 using System.Diagnostics;
 using System.Collections.Generic;
+
+using MySql.Data.MySqlClient;
 
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
@@ -73,22 +76,162 @@ namespace Extractor {
                 }
 
 
+                if(nameExtension.EndsWith(".swf")) {
+                    JObject manifest = ExtractFlash(library, name, file, output);
 
-                JObject manifest = ExtractFlash(library, name, file, output);
 
+                    using (StreamWriter writer = File.CreateText(output + "/" + name + ".json")) {
+                        JsonSerializer serializer = new JsonSerializer();
+                        
+                        serializer.Serialize(writer, manifest);
+                    }
 
-                using (StreamWriter writer = File.CreateText(output + "/" + name + ".json")) {
-                    JsonSerializer serializer = new JsonSerializer();
-                    
-                    serializer.Serialize(writer, manifest);
+                    Directory.Delete(outputImages, true);
+                    Directory.Delete(outputManifest, true);
                 }
-
-                Directory.Delete(outputImages, true);
-                Directory.Delete(outputManifest, true);
+                else if(nameExtension.EndsWith(".xml")) {
+                    if(name == "furnidata") {
+                        ExtractFurnitures(file, output);
+                    }
+                }
             }
             catch(Exception exception) {
                 Console.WriteLine(exception.Message);
                 Console.WriteLine(exception.StackTrace);
+            }
+        }
+
+        [Flags]
+    public enum GameFurnitureFlags {
+        Stackable   = 1 << 0,
+        Sitable     = 1 << 1,
+        Standable   = 1 << 2,
+        Walkable    = 1 << 3,
+        Sleepable   = 1 << 4
+    };
+
+        public static void ExtractFurnitures(string file, string output) {
+            XmlDocument document = new XmlDocument();
+
+            document.Load(file);
+
+            string[] directories = Directory.GetDirectories("C:/Cortex/Client/assets/HabboFurnitures");
+
+            for(int index = 0; index < directories.Length; index++) {
+                string name = Path.GetFileName(directories[index]);
+
+                string library = name;
+
+                for(int character = 0; character < library.Length; character++) {
+                    if(Char.IsLetter(library[character])) {
+                        library = name.Substring(character);
+
+                        break;
+                    }
+                }
+
+                Console.WriteLine("Restoring asset " + name + "...");
+
+                try {
+                    XmlNode node = null;
+
+                    foreach(XmlNode child in document.SelectNodes("//roomitemtypes")) {
+                        node = child.SelectSingleNode("//furnitype[starts-with(@classname, '" + library + "')]");
+
+                        if(node == null)
+                            continue;
+
+                        break;
+                    }
+
+                    if(node == null) {
+                        Console.WriteLine("FOUND NOTHING FOR " + library);
+
+                        continue;
+                    }
+
+                    XmlNode subNode;
+
+                    subNode = node.SelectSingleNode("defaultdir");
+                    int direction = (subNode == null)?(2):(Int32.Parse(subNode.InnerText));
+                    
+                    subNode = node.SelectSingleNode("xdim");
+                    double dimensionBreadth = (subNode == null)?(1):(Convert.ToDouble(subNode.InnerText));
+                    
+                    subNode = node.SelectSingleNode("ydim");
+                    double dimensionHeight = (subNode == null)?(1):(Convert.ToDouble(subNode.InnerText));
+                    
+                    subNode = node.SelectSingleNode("name");
+                    string title = (subNode == null)?("Unknown"):(subNode.InnerText);
+                    
+                    subNode = node.SelectSingleNode("description");
+                    string description = (subNode == null)?("Unknown"):(subNode.InnerText);
+                    
+                    subNode = node.SelectSingleNode("customparams");
+                    string parameters = (subNode == null)?(""):(subNode.InnerText);
+                    
+                    subNode = node.SelectSingleNode("furniline");
+                    string furniline = (subNode == null)?("none"):(subNode.InnerText);
+
+                    GameFurnitureFlags flags = 0;
+                    
+                    subNode = node.SelectSingleNode("canstandon");
+                    if(subNode != null && Int32.Parse(subNode.InnerText) == 1) flags |= GameFurnitureFlags.Standable | GameFurnitureFlags.Walkable | GameFurnitureFlags.Stackable;
+                    
+                    subNode = node.SelectSingleNode("cansiton");
+                    if(subNode != null && Int32.Parse(subNode.InnerText) == 1) flags |= GameFurnitureFlags.Sitable | GameFurnitureFlags.Walkable | GameFurnitureFlags.Stackable;
+                    
+                    subNode = node.SelectSingleNode("canlayon");
+                    if(subNode != null && Int32.Parse(subNode.InnerText) == 1) flags |= GameFurnitureFlags.Sleepable | GameFurnitureFlags.Walkable | GameFurnitureFlags.Stackable;
+
+                    string colors = "";
+
+                    subNode = node.SelectSingleNode("partcolors");
+                    if(subNode != null && subNode.HasChildNodes) {
+                        colors = "";
+
+                        foreach(XmlNode color in subNode.ChildNodes) {
+                            if(colors.Length != 0)
+                                colors += ",";
+
+                            colors += color.InnerText;
+                        }
+                    }
+
+                    using MySqlConnection connection = new MySqlConnection("server=127.0.0.1;uid=root;database=cortex");
+
+                    connection.Open();
+
+                    using MySqlCommand command = new MySqlCommand("INSERT INTO furnitures (id, line, title, description, flags, breadth, height, depth, direction, parameters, colors) VALUES (@id, @line, @title, @description, @flags, @breadth, @height, @depth, @direction, @parameters, @colors)", connection);
+
+                    command.Parameters.AddWithValue("@id", name);
+                    command.Parameters.AddWithValue("@line", furniline);
+                    command.Parameters.AddWithValue("@title", title);
+                    command.Parameters.AddWithValue("@description", description);
+                    command.Parameters.AddWithValue("@flags", flags);
+                    command.Parameters.AddWithValue("@breadth", dimensionBreadth);
+                    command.Parameters.AddWithValue("@height", dimensionHeight);
+                    command.Parameters.AddWithValue("@depth", 1);
+                    command.Parameters.AddWithValue("@direction", direction);
+                    command.Parameters.AddWithValue("@parameters", parameters);
+                    command.Parameters.AddWithValue("@colors", colors);
+
+                    command.ExecuteNonQuery();
+
+                    long row = command.LastInsertedId;
+
+                    
+                    Console.WriteLine("Inserted furniture row with row index " + row + "!");
+
+                    if(!Directory.Exists("C:/Cortex/Client/assets/HabboFurnitures/" + furniline))
+                        Directory.CreateDirectory("C:/Cortex/Client/assets/HabboFurnitures/" + furniline);
+
+                    Directory.Move(directories[index], "C:/Cortex/Client/assets/HabboFurnitures/" + furniline + "/" + name);
+                }
+                catch(Exception exception) {
+                    Console.WriteLine(exception.Message);
+                    Console.WriteLine(exception.StackTrace);
+                }
             }
         }
 
