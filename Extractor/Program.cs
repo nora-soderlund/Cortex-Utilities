@@ -20,13 +20,18 @@ namespace Extractor {
 
             Directory.CreateDirectory("output");
             
-            ThreadPool.SetMaxThreads(4, 4);
+            ThreadPool.SetMaxThreads(20, 0);
 
             if((attr & FileAttributes.Directory) == FileAttributes.Directory) {
                 string[] files = Directory.GetFiles(path);
 
-                for(int index = 0; index < files.Length; index++)
-                    ThreadPool.QueueUserWorkItem(result => Extract(files[index]));
+                for(int index = 0; index < files.Length; index++) {
+                    string file = files[index];
+
+                    //Extract(file);
+
+                    ThreadPool.QueueUserWorkItem(result => Extract(file));
+                }
             }
             else
                 Extract(path);
@@ -127,8 +132,8 @@ namespace Extractor {
                 process.Close();
             }
 
-            //C:\Cortex\Extractor\input\PRODUCTION-201701242205-837386173\dcr\hof_furni\15pillow.swf
-            //C:\Cortex\Extractor\input\PRODUCTION-201701242205-837386173\dcr\hof_furni\wooden_screen.swf
+            //C:\Cortex\Utilities\Extractor\input\PRODUCTION-201701242205-837386173\dcr\hof_furni\15pillow.swf
+            //C:\Cortex\Utilities\Extractor\input\PRODUCTION-201701242205-837386173\dcr\hof_furni\wooden_screen.swf
 
             string[] files = Directory.GetFiles(output, "*.*", SearchOption.AllDirectories);
 
@@ -162,7 +167,7 @@ namespace Extractor {
             }
 
             using(Process process = new Process()) {
-                string fuckOff = "/c TexturePacker.exe --trim-sprite-names --alpha-handling KeepTransparentPixels --max-width 4048 --max-height 4048 --disable-rotation --trim-mode None --disable-auto-alias --png-opt-level 0 --algorithm Basic --extrude 0 --format json --data C:/Cortex/Extractor/output/" + libraryFull + "/" + libraryFull + ".json C:/Cortex/Extractor/output/" + libraryFull + "/images";
+                string fuckOff = "/c TexturePacker.exe --trim-sprite-names --alpha-handling KeepTransparentPixels --max-width 4048 --max-height 4048 --disable-rotation --trim-mode None --disable-auto-alias --png-opt-level 0 --algorithm Basic --extrude 0 --format json --data C:/Cortex/Utilities/Extractor/output/" + libraryFull + "/" + libraryFull + ".json C:/Cortex/Utilities/Extractor/output/" + libraryFull + "/images/";
 
                 process.StartInfo = new ProcessStartInfo("cmd.exe", fuckOff) {
                     WorkingDirectory = "C:/Program Files/CodeAndWeb/TexturePacker/bin/"
