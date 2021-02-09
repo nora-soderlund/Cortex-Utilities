@@ -77,6 +77,9 @@ namespace Extractor {
                     
                     serializer.Serialize(writer, manifest);
                 }
+
+                Directory.Delete(outputImages, true);
+                Directory.Delete(outputManifest, true);
             }
             catch(Exception exception) {
                 Console.WriteLine(exception.Message);
