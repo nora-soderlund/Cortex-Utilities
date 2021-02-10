@@ -93,6 +93,16 @@ namespace Extractor {
                     if(name == "furnidata") {
                         ExtractFurnitures(file, output);
                     }
+                    else {
+                        XmlDocument document = new XmlDocument();
+                        document.Load(file);
+                        
+                        using (StreamWriter writer = File.CreateText(output + "/" + name + ".json")) {
+                            JsonSerializer serializer = new JsonSerializer();
+                            
+                            serializer.Serialize(writer, JsonConvert.DeserializeObject<JToken>(JsonConvert.SerializeObject(document.FirstChild.NextSibling).Replace("@", "")));
+                        }
+                    }
                 }
             }
             catch(Exception exception) {
