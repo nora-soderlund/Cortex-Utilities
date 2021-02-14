@@ -19,6 +19,14 @@ namespace Extractor {
 
             string path = Console.ReadLine();
 
+            if(path.Split(' ')[0] == "pack") {
+                Pack(path.Split(' ')[1]);
+
+                Main();
+
+                return;
+            }
+
             FileAttributes attr = File.GetAttributes(path);
 
             Directory.CreateDirectory("output");
@@ -40,6 +48,59 @@ namespace Extractor {
                 Extract(path);
 
             Main();
+        }
+
+        public static void Pack(string file) {
+            string name = Path.GetFileNameWithoutExtension(file);
+            string nameExtension = Path.GetFileName(file);
+
+            Console.WriteLine("Starting extraction process for " + nameExtension + "...");
+
+            string output = "output/" + name;
+
+            if(!Directory.Exists(output))
+                Directory.CreateDirectory(output);
+
+            using(Process process = new Process()) {
+                string fuckOff = "/c TexturePacker.exe --trim-sprite-names --alpha-handling KeepTransparentPixels --max-width 4048 --max-height 4048 --disable-rotation --trim-mode None --disable-auto-alias --png-opt-level 0 --algorithm Basic --extrude 0 --format json --data C:/Cortex/Utilities/Extractor/output/" + name + "/" + name + ".json " + file;
+
+                process.StartInfo = new ProcessStartInfo("cmd.exe", fuckOff) {
+                    WorkingDirectory = "C:/Program Files/CodeAndWeb/TexturePacker/bin/"
+                };
+
+                process.Start();
+
+                process.WaitForExit();
+
+                process.Close();
+            }
+
+            //XmlDocument sprites = new XmlDocument();
+
+            //sprites.Load(output + "/" + libraryFull + ".xml");
+
+            Dictionary<string, Dictionary<string, string>> dictionary = new Dictionary<string, Dictionary<string, string>>();
+
+            JObject sprites = JObject.Parse(File.ReadAllText(output + "/" + name + ".json"));
+
+            JToken frames = sprites["frames"];
+
+            foreach(var item in (JObject)frames) {
+                Dictionary<string, string> properties = new Dictionary<string, string>();
+
+                properties.Add("left", item.Value["frame"]["x"].ToString());
+                properties.Add("top", item.Value["frame"]["y"].ToString());
+                properties.Add("width", item.Value["frame"]["w"].ToString());
+                properties.Add("height", item.Value["frame"]["h"].ToString());
+
+                dictionary.Add(item.Key, properties);
+            }
+
+            using (StreamWriter writer = File.CreateText(output + "/" + name + ".json")) {
+                JsonSerializer serializer = new JsonSerializer();
+                
+                serializer.Serialize(writer, dictionary);
+            }
         }
 
         public static void Extract(string file) {
