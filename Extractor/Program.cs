@@ -19,6 +19,72 @@ namespace Extractor {
 
             string path = Console.ReadLine();
 
+            if(path == "shop") {
+                string[] directories = Directory.GetDirectories("C:/Cortex/Client/assets/HabboFurnitures");
+
+                for(int index = 0; index < directories.Length; index++) {
+                    string line = Path.GetFileName(directories[index]);
+    
+                    long page = 0;
+
+                    using(MySqlConnection connection = new MySqlConnection("server=127.0.0.1;uid=root;database=cortex")) {
+                        connection.Open();
+
+                        using(MySqlCommand command = new MySqlCommand("INSERT INTO shop (parent, title, `order`, icon, type) VALUES (2, @line, 0, 1, 'default')", connection)) {
+                            command.Parameters.AddWithValue("@line", line);
+
+                            command.ExecuteNonQuery();
+
+                            page = command.LastInsertedId;
+                        }
+                    }
+
+                    string[] furnitures = Directory.GetDirectories(directories[index]);
+
+                    for(int furni = 0; furni < furnitures.Length; furni++) {
+                        string asset = Path.GetFileName(furnitures[furni]);
+
+                        using(MySqlConnection connection = new MySqlConnection("server=127.0.0.1;uid=root;database=cortex")) {
+                            connection.Open();
+
+                            using(MySqlCommand command = new MySqlCommand("INSERT INTO shop_furnitures (shop, furniture) VALUES (@page, @furniture)", connection)) {
+                                command.Parameters.AddWithValue("@page", page);
+                                command.Parameters.AddWithValue("@furniture", asset);
+
+                                command.ExecuteNonQuery();
+                            }
+                        }
+
+                        try {
+                            JObject manifest = JObject.Parse(File.ReadAllText(furnitures[furni] + "/" + asset + ".json"));
+
+                            string logic = manifest["index"]["object"]["logic"].ToString();
+                            double depth = manifest["logic"]["objectData"]["model"]["dimensions"]["z"].ToObject<double>();
+
+                            using(MySqlConnection connection = new MySqlConnection("server=127.0.0.1;uid=root;database=cortex")) {
+                                connection.Open();
+
+                                using(MySqlCommand command = new MySqlCommand("UPDATE furnitures SET logic = @logic, depth = @depth WHERE id = @id", connection)) {
+                                    command.Parameters.AddWithValue("@logic", logic);
+                                    command.Parameters.AddWithValue("@depth", depth);
+                                    command.Parameters.AddWithValue("@id", asset);
+
+                                    command.ExecuteNonQuery();
+                                }
+                            }
+                        }
+                        catch(Exception exception) {
+                            Console.WriteLine(exception.Message);
+                            Console.WriteLine(exception.StackTrace);
+                        }
+                    }
+                }
+
+                Main();
+
+                return;
+            }
+
             if(path.Split(' ')[0] == "pack") {
                 Pack(path.Split(' ')[1]);
 
@@ -173,13 +239,13 @@ namespace Extractor {
         }
 
         [Flags]
-    public enum GameFurnitureFlags {
-        Stackable   = 1 << 0,
-        Sitable     = 1 << 1,
-        Standable   = 1 << 2,
-        Walkable    = 1 << 3,
-        Sleepable   = 1 << 4
-    };
+        public enum GameFurnitureFlags {
+            Stackable   = 1 << 0,
+            Sitable     = 1 << 1,
+            Standable   = 1 << 2,
+            Walkable    = 1 << 3,
+            Sleepable   = 1 << 4
+        };
 
         public static void ExtractFurnitures(string file, string output) {
             XmlDocument document = new XmlDocument();
@@ -282,7 +348,7 @@ namespace Extractor {
                     command.Parameters.AddWithValue("@flags", flags);
                     command.Parameters.AddWithValue("@breadth", dimensionBreadth);
                     command.Parameters.AddWithValue("@height", dimensionHeight);
-                    command.Parameters.AddWithValue("@depth", 1);
+                    command.Parameters.AddWithValue("@depth", 0);
                     command.Parameters.AddWithValue("@direction", direction);
                     command.Parameters.AddWithValue("@parameters", parameters);
                     command.Parameters.AddWithValue("@colors", colors);
