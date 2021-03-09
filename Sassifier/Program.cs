@@ -40,7 +40,7 @@ namespace Sassifier {
 
                 styles += "\r\n" + style;
 
-                styles += "\r\n.sprite-" + name + " { position: relative; width: " + width + "px; height: " + height + "px; &:after { content: ''; position: absolute; left: 0; top: 0; @include sprite-" + name + "(); } }\r\n";
+                styles += "\r\n.sprite-" + name + " { position: relative; width: " + width + "px; height: " + height + "px; margin-right: " + width + "px; &:after { content: ''; position: absolute; left: 0; top: 0; @include sprite-" + name + "(); } }\r\n";
             }
 
             File.WriteAllText(directory + @"\Sprites.scss", styles);
