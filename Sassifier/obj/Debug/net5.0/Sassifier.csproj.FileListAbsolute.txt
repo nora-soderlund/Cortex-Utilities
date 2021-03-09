@@ -1,0 +1,16 @@
+C:\Cortex\Utilities\Sassifier\bin\Debug\net5.0\Sassifier.exe
+C:\Cortex\Utilities\Sassifier\bin\Debug\net5.0\Sassifier.deps.json
+C:\Cortex\Utilities\Sassifier\bin\Debug\net5.0\Sassifier.runtimeconfig.json
+C:\Cortex\Utilities\Sassifier\bin\Debug\net5.0\Sassifier.runtimeconfig.dev.json
+C:\Cortex\Utilities\Sassifier\bin\Debug\net5.0\Sassifier.dll
+C:\Cortex\Utilities\Sassifier\bin\Debug\net5.0\ref\Sassifier.dll
+C:\Cortex\Utilities\Sassifier\bin\Debug\net5.0\Sassifier.pdb
+C:\Cortex\Utilities\Sassifier\obj\Debug\net5.0\Sassifier.csprojAssemblyReference.cache
+C:\Cortex\Utilities\Sassifier\obj\Debug\net5.0\Sassifier.GeneratedMSBuildEditorConfig.editorconfig
+C:\Cortex\Utilities\Sassifier\obj\Debug\net5.0\Sassifier.AssemblyInfoInputs.cache
+C:\Cortex\Utilities\Sassifier\obj\Debug\net5.0\Sassifier.AssemblyInfo.cs
+C:\Cortex\Utilities\Sassifier\obj\Debug\net5.0\Sassifier.csproj.CoreCompileInputs.cache
+C:\Cortex\Utilities\Sassifier\obj\Debug\net5.0\Sassifier.dll
+C:\Cortex\Utilities\Sassifier\obj\Debug\net5.0\ref\Sassifier.dll
+C:\Cortex\Utilities\Sassifier\obj\Debug\net5.0\Sassifier.pdb
+C:\Cortex\Utilities\Sassifier\obj\Debug\net5.0\Sassifier.genruntimeconfig.cache
