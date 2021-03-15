@@ -19,7 +19,87 @@ namespace Extractor {
 
             string path = Console.ReadLine();
 
-            if(path == "shop") {
+            if(path == "badges") {
+                Dictionary<string, int> entries = new Dictionary<string, int>();
+
+                using MySqlConnection connection = new MySqlConnection("server=127.0.0.1;uid=root;database=cortex");
+                connection.Open();
+
+                string[] lines = File.ReadAllLines("C:/Cortex/Utilities/Extractor/input/external_flash_texts.ini");
+
+                foreach(string line in lines) {
+                    try {
+                        if(!line.StartsWith("badge_name_"))
+                            continue;
+
+                        string[] parameters = line.Split('=');
+                        
+                        string id = parameters[0].Replace("badge_name_", "").Trim();
+
+                        if(entries.ContainsKey(id)) {
+                            Console.WriteLine("Skipping duplicate badge title of " + id + "...");
+
+                            continue;
+                        }
+
+                        string title = (parameters.Length == 2)?(parameters[1].Trim()):(id);
+
+                        using MySqlCommand command = new MySqlCommand("INSERT INTO badges (id, title) VALUES (@id, @title)", connection);
+
+                        command.Parameters.AddWithValue("@id", id);
+                        command.Parameters.AddWithValue("@title", title);
+
+                        command.ExecuteNonQuery();
+
+                        Console.WriteLine("Setting badge title of " + id + " to '" + title + "'...");
+
+                        entries.Add(id, 1);
+                    }
+                    catch(Exception exception) {
+                        Console.WriteLine(exception.Message);
+                        Console.WriteLine(exception.StackTrace);
+                    }
+                }
+
+                foreach(string line in lines) {
+                    try {
+                        if(!line.StartsWith("badge_desc_"))
+                            continue;
+
+                        string[] parameters = line.Split('=');
+                        
+                        string id = parameters[0].Replace("badge_desc_", "").Trim();
+
+                        if(!entries.ContainsKey(id)) {
+                            Console.WriteLine("Skipping badge description of " + id + "...");
+
+                            continue;
+                        }
+
+                        string description = (parameters.Length == 2)?(parameters[1].Trim()):(id);
+
+                        using MySqlCommand command = new MySqlCommand("UPDATE badges SET description = @description WHERE id = @id", connection);
+
+                        command.Parameters.AddWithValue("@id", id);
+                        command.Parameters.AddWithValue("@description", description);
+
+                        command.ExecuteNonQuery();
+
+                        Console.WriteLine("Setting badge description of " + id + " to '" + description + "'...");
+                    }
+                    catch(Exception exception) {
+                        Console.WriteLine(exception.Message);
+                        Console.WriteLine(exception.StackTrace);
+                    }
+                }
+
+                Console.WriteLine("Finished with " + entries.Count + " entries!");
+
+                Main();
+
+                return;
+            }
+            else if(path == "shop") {
                 string[] directories = Directory.GetDirectories("C:/Cortex/Client/assets/HabboFurnitures");
 
                 for(int index = 0; index < directories.Length; index++) {
