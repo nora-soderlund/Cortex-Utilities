@@ -164,6 +164,44 @@ namespace Extractor {
 
                 return;
             }
+            else if(path == "walls") {
+                string[] directories = Directory.GetDirectories("C:/Cortex/Client/assets/HabboFurnitures");
+
+                for(int index = 0; index < directories.Length; index++) {
+                    string line = Path.GetFileName(directories[index]);
+
+                    string[] furnitures = Directory.GetDirectories(directories[index]);
+
+                    for(int furni = 0; furni < furnitures.Length; furni++) {
+                        string asset = Path.GetFileName(furnitures[furni]);
+
+                        try {
+                            JObject manifest = JObject.Parse(File.ReadAllText(furnitures[furni] + "/" + asset + ".json"));
+
+                            if(manifest["logic"]["objectData"]["model"]["dimensions"].SelectToken("centerZ") == null)
+                                continue;
+
+                            using(MySqlConnection connection = new MySqlConnection("server=127.0.0.1;uid=root;database=cortex")) {
+                                connection.Open();
+
+                                using(MySqlCommand command = new MySqlCommand("UPDATE furnitures SET type = 'wall' WHERE id = @id", connection)) {
+                                    command.Parameters.AddWithValue("@id", asset);
+
+                                    command.ExecuteNonQuery();
+                                }
+                            }
+                        }
+                        catch(Exception exception) {
+                            Console.WriteLine(exception.Message);
+                            Console.WriteLine(exception.StackTrace);
+                        }
+                    }
+                }
+
+                Main();
+
+                return;
+            }
 
             if(path.Split(' ')[0] == "pack") {
                 Pack(path.Split(' ')[1]);
